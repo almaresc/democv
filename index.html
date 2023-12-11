@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <title>PoC Comune di Venezia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      This CDN points to the latest official release of Web Chat. If you need to test against Web Chat's latest bits, please refer to pointing to Web Chat's MyGet feed:
+      https://github.com/microsoft/BotFramework-WebChat#how-to-test-with-web-chats-latest-bits
+    -->
+    <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="icon" href="favicon_0.ico">
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+        }
+
+        .bg {
+            /* The image used */
+            background-image: url("bg.jpg");
+
+            /* Full height */
+            height: 100%;
+			
+			
+
+            /* Center and scale the image nicely */
+   
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        /* Button used to open the chat form - fixed at the bottom of the page */
+        .open-button {
+            background-color: #B31B34;
+            color: white;
+            padding: 16px 20px;
+            border: none;
+            cursor: pointer;
+            opacity: 0.8;
+            position: fixed;
+            bottom: 23px;
+            right: 18px;
+            width: 200px;
+        }
+
+        .open-button i {
+            font-size: 20px;
+        }
+
+        .open-button span {
+            font-size: 17px;
+        }
+
+        /* The popup chat - hidden by default */
+        .chat-popup {
+            display: none;
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            border: 3px solid #B31B34;
+            background: #fff;
+            z-index: 9;
+        }
+
+        .TopHead {
+            background: #B31B34;
+            padding: 2px 10px 5px 10px;
+            color: white;
+            max-height: 35px;
+            height: 35px;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        /* Add styles to the form container */
+        .form-container {
+            max-width: 500px;
+            width: 500px;
+            max-height: 500px;
+            min-height: 500px;
+            height: 500px;
+            
+            background-color: white;
+            margin-bottom: 5px;
+        }
+
+
+        .chat-popup .btn {
+            background-color: transparent;	
+            color: white;
+            padding: 16px 20px;
+            border: none;
+            cursor: pointer;
+            opacity: 0.8;
+            position: fixed;
+            bottom: 525px;
+            right: 18px;
+            width: 50px;
+        }
+
+        /* Add a red background color to the cancel button */
+        .form-container .cancel {
+            background-color: red;
+        }
+
+        /* Add some hover effects to buttons */
+        .chat-popup .btn:hover,
+        .open-button:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+	
+    <div class="bg"></div>
+	<div style="position:absolute;right:20px;top:20px;"><select id="langs" onchange="cambiaLan()"><option value="it-IT">IT</option><option value="en-EN">EN</option></select></div>
+    <button class="open-button" onclick="openForm()"><i class="fa fa-comments-o"></i> &nbsp; <span id="chatLabel">Parla con il Comune di Venezia</span></button>
+
+    <div class="chat-popup" id="myForm">
+        <div class="TopHead"><button type="button" class="btn cancel" onclick="closeForm()">X</button></div>        
+        <div class="form-container" id='webchat'>
+        </div>
+        <div id="bot"></div>
+        
+    </div>
+    <script>
+        function openForm() {
+            document.getElementById("myForm").style.display = "block";
+
+        }
+
+        function closeForm() {
+            document.getElementById("myForm").style.display = "none";
+        }
+
+		function cambiaLan()
+		{
+			var colore = document.getElementById("langs").value; 
+			var http = new XMLHttpRequest();
+			var url='https://openaiapicv.azurewebsites.net/api/Locale?locale='+colore;
+			http.open("GET", url);
+			http.send();
+
+			http.onreadystatechange = (e) => {
+			  console.log(http.responseText);
+			  let url = window.location.href.split('?')[0];
+			  
+			  if (url.indexOf('?') > -1){
+			    url += '&lan='+colore
+			  } else {
+			    url += '?lan='+colore				
+			  }
+			  window.location.href = url;
+			}
+		}
+       
+        (async function () {
+		
+			var params = new URLSearchParams(window.location.search);
+
+			// Ottieni il valore del parametro colore
+			var colore = params.get("lan");
+
+			if(colore == "en-EN")
+			{
+				var select  = document.getElementById("langs"); 
+				// Imposta il valore dell'elemento select in base al parametro colore
+				select.value = colore;
+				document.getElementById("chatLabel").textContent  ="Talk with Venice";
+			}
+			else 
+			{
+				colore = "it-IT";
+				var select  = document.getElementById("langs"); 
+				// Imposta il valore dell'elemento select in base al parametro colore
+				select.value = colore;
+				document.getElementById("chatLabel").textContent  ="Parla con Venezia";
+			}
+
+            // In this demo, we are using Direct Line Speech token from MockBot.
+            // Your client code must provide either a secret or a token to talk to your bot.
+            // Tokens are more secure. To learn about the differences between secrets and tokens
+            // and to understand the risks associated with using secrets, visit https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-direct-line-3-0-authentication?view=azure-bot-service-4.0
+
+            // This function will fetch speech token from a server.
+            // In our server, we call Cognitive Services to exchange subscription key into authorization token.
+            // Visit https://docs.microsoft.com/en-us/azure/cognitive-services/authentication for more details.
+            const fc = async () => {               
+                return { region: "westeurope", subscriptionKey: "226f58b84cec4b48af327c3914f7cb89" };
+            };
+
+            // Create a set of adapters for Web Chat to use with Direct Line Speech channel.
+            // Please refer to /packages/directlinespeech/src/createAdapters.js for list of supported options.
+            const adapters = await window.WebChat.createDirectLineSpeechAdapters({
+                speechRecognitionLanguage: "it-it",
+                fetchCredentials: fc
+            });
+			
+			const styleOptions = {
+
+            // Avatar
+				botAvatarImage: 'assistant.jpg',
+				botAvatarInitials: '',
+
+				//user
+				userAvatarImage: 'user.png',
+				userAvatarInitials: '',
+
+				// Send box
+				hideSendBox: false,
+				hideUploadButton: true,
+				sendBoxButtonColor: '#767676',
+				sendBoxButtonColorOnDisabled: '#CCC',
+				sendBoxButtonColorOnFocus: '#333',
+				sendBoxButtonColorOnHover: '#333',
+				sendBoxHeight: 30,
+
+			};
+			  
+            // Pass the set of adapters to Web Chat.
+            window.WebChat.renderWebChat(
+                {
+                    ...adapters,
+                    locale: colore,
+					styleOptions
+                },
+                document.getElementById('webchat')
+            );
+
+            document.querySelector('#webchat > *').focus();
+        })().catch(err => console.error(err));
+    </script>
+
+</body>
+</html>
